@@ -1,0 +1,19 @@
+{
+  "name": "synthetic-tests",
+  "version": "1.0.0",
+  "description": "tests e2e",
+  "license": "ISC",
+  "author": "Alessandro Fernandes",
+  "type": "module",
+  "main": "runner.js",
+  "scripts": {
+    "test": "node runner.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.988.0",
+    "@aws-sdk/s3-request-presigner": "^3.988.0",
+    "dotenv": "^17.2.4",
+    "node-fetch": "^3.3.2",
+    "playwright": "^1.58.2"
+  }
+}

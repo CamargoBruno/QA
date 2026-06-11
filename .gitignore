@@ -1,0 +1,11 @@
+node_modules
+.last-slack-heartbeat
+.env
+.env.*
+environments/
+screenshots/
+test-results/
+*.png
+.claude/
+debug-*.js
+run-upload.js

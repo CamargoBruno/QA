@@ -1,0 +1,59 @@
+name: Build
+on:
+  release:
+    types:
+      - created
+    branches:
+      - main
+      
+  push:
+    branches:
+      - develop
+      - homolog
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: false
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+  actions: write
+  
+jobs:
+  Build:
+    name: "📦 Build"
+    if: ${{ inputs.rollback_mode != 'true' }}
+    uses: Privacy-TechBrazil/privacy.devops/.github/workflows/build.yml@latest
+    with:
+      project_type: ${{ vars.project_type }}
+      image_tag_latest: true
+    secrets:
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      AZURE_NPM_ACCESS_TOKEN: ${{ secrets.AZURE_NPM_ACCESS_TOKEN }}
+      TOKEN_GITHUB_PRIVACY: ${{ secrets.TOKEN_GITHUB_PRIVACY }}
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      OIDC_ROLE_ARN: >-
+        ${{ 
+          (github.ref_name == 'main' || (github.event_name == 'release' && github.event.release.target_commitish == 'main')) && secrets.OIDC_ROLE_ARN_PROD ||
+          (github.ref_name == 'homolog' || (github.event_name == 'release' && github.event.release.target_commitish == 'homolog')) && secrets.OIDC_ROLE_ARN_HML ||
+          secrets.OIDC_ROLE_ARN_DEV 
+        }}
+
+  Deploy:
+    name: "🚀 Deploy"
+    needs: Build
+    if: ${{ inputs.rollback_mode != 'true' }}
+    uses: Privacy-TechBrazil/privacy.devops/.github/workflows/ecs-deploy.yml@latest
+    with:
+      environment: ${{ (github.ref_name == 'main' || (github.event_name == 'release' && github.event.release.target_commitish == 'main')) && 'prod' || (github.ref_name == 'homolog' || (github.event_name == 'release' && github.event.release.target_commitish == 'homolog')) && 'hml' || 'dev' }}
+      project_type: ${{ vars.project_type }}
+    secrets:
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      OIDC_ROLE_ARN: >-
+        ${{ 
+          (github.ref_name == 'main' || (github.event_name == 'release' && github.event.release.target_commitish == 'main')) && secrets.OIDC_ROLE_ARN_PROD ||
+          (github.ref_name == 'homolog' || (github.event_name == 'release' && github.event.release.target_commitish == 'homolog')) && secrets.OIDC_ROLE_ARN_HML ||
+          secrets.OIDC_ROLE_ARN_DEV 
+        }}

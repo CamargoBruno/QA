@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+
+    triggers {
+        cron('0 9,15 * * *')
+    }
+
+    options {
+        timeout(time: 30, unit: 'MINUTES')
+        buildDiscarder(logRotator(numToKeepStr: '20'))
+    }
+
+    stages {
+        stage('Login Load Test') {
+            steps {
+                withCredentials([file(credentialsId: 'synthetic-tests-env', variable: 'ENV_FILE')]) {
+                    bat "copy %ENV_FILE% .env"
+                    bat 'powershell -ExecutionPolicy Bypass -File load-tests\\run-k6.ps1 login'
+                }
+            }
+        }
+
+        stage('Upload Load Test') {
+            steps {
+                bat 'powershell -ExecutionPolicy Bypass -File load-tests\\run-k6.ps1 upload-midia'
+            }
+        }
+    }
+
+    post {
+        always {
+            bat 'if exist .env del .env'
+            deleteDir()
+        }
+    }
+}
